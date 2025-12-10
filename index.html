@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PARA MEU AMOR — parasemprenos.top</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#ff6b9f;--glass: rgba(255,255,255,0.04)}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#071022 0%,#0b1320 100%);color:#e6eef8}
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+    header{max-width:900px;text-align:center;margin-bottom:28px}
+    h1{font-size:clamp(36px,8vw,96px);letter-spacing:2px;margin:0 0 12px}
+    p.lead{opacity:0.85;margin:0;font-size:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter:blur(6px);padding:28px;border-radius:16px;box-shadow:0 6px 30px rgba(2,6,23,0.6);width:100%;max-width:820px}
+    .search-row{display:flex;gap:12px;align-items:center;margin-top:18px}
+    input.search{flex:1;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:16px}
+    button.go{padding:12px 18px;border-radius:12px;border:none;background:var(--accent);color:white;font-weight:700;cursor:pointer}
+    .result{margin-top:18px;padding:14px;border-radius:10px;background:var(--glass);display:none;align-items:center;gap:12px}
+    a.link{color:var(--accent);font-weight:700;text-decoration:none}
+    .small{font-size:13px;opacity:0.9}
+    .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+    .hearts span{position:absolute;font-size:20px;opacity:0.9;animation:fall linear infinite}
+    @keyframes fall{from{transform:translateY(-120vh) rotate(0deg)}to{transform:translateY(120vh) rotate(360deg)}}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:inherit}
+    footer{margin-top:18px;text-align:center;opacity:0.8;font-size:13px}
+    @media(max-width:560px){.search-row{flex-direction:column}.go{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="hearts" aria-hidden="true">
+    <!-- Some decorative hearts -->
+    <span style="left:5%;animation-duration:12s;font-size:22px">💖</span>
+    <span style="left:20%;animation-duration:10s;font-size:20px">💘</span>
+    <span style="left:35%;animation-duration:14s;font-size:24px">💞</span>
+    <span style="left:50%;animation-duration:11s;font-size:20px">💓</span>
+    <span style="left:68%;animation-duration:13s;font-size:26px">❤️</span>
+    <span style="left:82%;animation-duration:9s;font-size:18px">💗</span>
+  </div>
+
+  <main class="wrap">
+    <header>
+      <h1>🌹 PARA MEU AMOR</h1>
+      <p class="lead">Bem-vindo! Esqueceu o link do cantinho de vocês? Digite o nome do casal e eu te mostro.</p>
+    </header>
+
+    <section class="card" role="region" aria-label="Busca de links do casal">
+      <div class="small">Exemplo: <strong>Ele e Ela</strong> ou <strong>Ela e Ele</strong></div>
+
+      <div class="search-row" style="margin-top:12px;">
+        <input id="query" class="search" type="search" placeholder="Esqueceu seu link? digite o nome do casal" aria-label="Pesquisar casal">
+        <button id="btn" class="go">Buscar</button>
+      </div>
+
+      <div id="result" class="result" role="status" aria-live="polite">
+        <div id="msg"></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <button id="copyBtn" class="btn-ghost">Copiar</button>
+          <a id="openLink" class="btn-ghost" target="_blank" rel="noopener">Abrir</a>
+        </div>
+      </div>
+
+      <div class="controls small">Não encontrou? Tente variações como: "Ele & Ela", "Ele,Ela", ou só os dois nomes separados por espaço.</div>
+    </section>
+
+    <footer>Feito com carinho 💞 — parasemprenos.top</footer>
+  </main>
+
+  <script>
+    // mapa de combinações para links (normalizado)
+    const map = new Map();
+    function keyOf(str1,str2){return (str1+"|"+str2).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();}
+
+    // registrar casais
+    map.set(keyOf('mateus','julia'),'https://parasemprenos.top/jm');
+    map.set(keyOf('julia','mateus'),'https://parasemprenos.top/jm');
+
+    map.set(keyOf('kauan','yasmin'),'https://parasemprenos.top/yk');
+    map.set(keyOf('yasmin','kauan'),'https://parasemprenos.top/yk');
+
+    const q = document.getElementById('query');
+    const btn = document.getElementById('btn');
+    const result = document.getElementById('result');
+    const msg = document.getElementById('msg');
+    const openLink = document.getElementById('openLink');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function normalizeText(s){return s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[\W_]+/g,' ').trim();}
+
+    function findLink(input){
+      const t = normalizeText(input);
+      if(!t) return null;
+      // try splitting by common separators
+      const separators = [' e ',' & ',' and ',',','/','-',' '];
+      for(const sep of separators){
+        if(t.includes(sep.trim())){
+          const parts = t.split(sep).map(x=>x.trim()).filter(Boolean);
+          if(parts.length>=2){
+            const a=parts[0], b=parts[1];
+            const k = keyOf(a,b);
+            if(map.has(k)) return map.get(k);
+            const k2 = keyOf(b,a);
+            if(map.has(k2)) return map.get(k2);
+          }
+        }
+      }
+      // try last resort: take first two words
+      const words = t.split(/\s+/).filter(Boolean);
+      if(words.length>=2){
+        const k=keyOf(words[0],words[1]); if(map.has(k)) return map.get(k);
+        const k2=keyOf(words[1],words[0]); if(map.has(k2)) return map.get(k2);
+      }
+      return null;
+    }
+
+    function showLink(link){
+      msg.innerHTML = `<strong>Link encontrado:</strong> <a class=\"link\" href=\"${link}\">${link}</a>`;
+      openLink.href = link; openLink.style.display='inline-block';
+      copyBtn.style.display='inline-block';
+      result.style.display='flex';
+    }
+    function showNotFound(){
+      msg.innerHTML = `Não achei um link pra esse casal. Você pode criar a página em <code>/seupath</code> e me avisar.`;
+      openLink.style.display='none'; copyBtn.style.display='none'; result.style.display='flex';
+    }
+
+    btn.addEventListener('click',()=>{
+      const v = q.value;
+      const link = findLink(v);
+      if(link) showLink(link); else showNotFound();
+    });
+
+    q.addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();btn.click();}});
+
+    copyBtn.addEventListener('click',()=>{
+      const url = openLink.href; navigator.clipboard.writeText(url).then(()=>{copyBtn.textContent='Copiado!'; setTimeout(()=>copyBtn.textContent='Copiar',1500);});
+    });
+
+    // small accessibility: focus input on load
+    window.addEventListener('load',()=>{q.focus();});
+  </script>
+</body>
+</html>
+
